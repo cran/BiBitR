@@ -265,3 +265,244 @@ rows_full1_in_BC <- function(matrix,bicresult,rows){
 }
 
 
+fitness_score <- function(BC,alpha=1){
+  if(!identical(as.numeric(as.vector(BC)),as.numeric(as.logical(BC)))){stop("BC is not a binary matrix!",call.=FALSE)}
+  
+  W_ik <- apply(BC,MARGIN=1,FUN=sum)
+  
+  p_i <- W_ik/ncol(BC)
+  
+  H_i <- sapply(p_i,FUN=function(x){
+    if(x==0 | x==1){
+      return(0)
+    }else{
+      return(-x*log(x,base=2)-(1-x)*log(1-x,base=2))
+    }
+  })
+  
+  S_i <- rep(0,length(H_i))
+  S_i[p_i>0.5] <- W_ik[p_i>0.5]*(1-H_i[p_i>0.5])^alpha
+  
+  return(list(S_i=S_i,score=sum(S_i),score_idea=sum(S_i)/(nrow(BC)*ncol(BC))))
+}
+
+
+#' @title Computing Fitness Score of Biclustering Result
+#' 
+#' @description \emph{EXPERIMENTAL FUNCTION}, still needs tuning. Will eventually be integrated in bibit2 function. 
+#' @author Ewoud De Troyer
+#' 
+#' @export
+#' @param matrix The binary input matrix.
+#' @param bicresult A \code{Biclust} result. (e.g. The return object from \code{bibit} or \code{bibit2})
+#' @param alpha Weighting factor between 0 and 1.
+#' @param verbose Boolean value to show a short summary.
+#' @return A list containing the scores.
+#' @examples
+#' \dontrun{
+#' data <- matrix(sample(c(0,1),100*100,replace=TRUE,prob=c(0.9,0.1)),nrow=100,ncol=100)
+#' data[1:10,1:10] <- 1 # BC1
+#' data[11:20,11:20] <- 1 # BC2
+#' data[21:30,21:30] <- 1 # BC3
+#' data <- data[sample(1:nrow(data),nrow(data)),sample(1:ncol(data),ncol(data))]
+#' 
+#' result1 <- bibit2(data,minr=5,minc=5,noise=0.2)
+#' result1
+#' 
+#' fitness <- GOF(matrix=data,bicresult=result1,alpha=0.5)
+#' summary(fitness)
+#' }
+GOF <- function(matrix,bicresult,alpha=1,verbose=FALSE){
+  if(class(bicresult)!="Biclust"){stop("bicresult is not a Biclust class object",call.=FALSE)}
+  if(class(matrix)!="matrix"){stop("matrix parameter should contain a matrix object",call.=FALSE)}
+
+  if(alpha<0 | alpha>1){stop("alpha should be between 0 and 1")}
+  
+  outputlist_S <- vector("list",bicresult@Number)
+  names(outputlist_S) <- paste0("BC",1:bicresult@Number)
+
+  outputdf <- matrix(NA,nrow=bicresult@Number,ncol=2,dimnames=list(names(outputlist_S),c("score","score_idea")))
+  
+    
+  for(i in 1:length(outputlist_S)){
+    BC <- matrix[bicresult@RowxNumber[,i],bicresult@NumberxCol[i,]]
+    temp <- fitness_score(BC,alpha=alpha)
+    outputlist_S[[i]] <- temp$S_i
+    outputdf[i,] <- c(temp$score,temp$score_idea)
+  }
+  
+  output <- list(fitness=as.data.frame(outputdf),S_i=outputlist_S)
+  
+  class(output) <- "GOFBC"
+  
+  # Do a summary print
+  if(verbose){summary(output)}
+  
+  return(output)
+}
+
+
+#' @export
+summary.GOFBC <- function(object,...){
+  
+  score <- object$fitness$score
+  score_idea <- object$fitness$score_idea
+  names(score) <- names(score_idea) <- rownames(object$fitness)
+  
+  selnumber <- ifelse(length(score)>=5,5,length(score))
+  
+  cat("Top 5 Fitness Scores:\n")
+  cat("---------------------\n")
+  print(sort(score,decreasing=TRUE)[1:selnumber])
+  cat("\n")
+  cat("Top 5 Experimental Fitness Scores:\n")
+  cat("----------------------------------\n")
+  print(sort(score_idea,decreasing=TRUE)[1:selnumber])
+  
+}
+
+
+#' @export
+print.bibit3 <- function(x,...){
+  
+  
+  for(i in 1:(length(x)-1)){
+    cat("\n")
+    cat(toupper(names(x)[i]),"\n")
+    cat(paste0(rep("-",nchar(toupper(names(x)[i]))),collapse=""),"\n\n")
+    
+    patterns <- c("FullPattern","SubPattern","Extended")
+    
+    for(j in 1:length(patterns)){
+      cat(paste0(toupper(patterns[j]),":"),"\n")
+      
+      object <- x[[i]][[patterns[j]]]
+      
+      n<-object@Number
+      
+      if(n>1)
+      {
+        cat("\nNumber of Clusters found: ",object@Number, "\n")
+        cat("\nCluster sizes:\n")
+        
+        rowcolsizes<-rbind(colSums(object@RowxNumber[,1:n]),rowSums(object@NumberxCol[1:n,]))
+        rownames(rowcolsizes)<-c("Number of Rows:","Number of Columns:")
+        colnames(rowcolsizes)<-paste("BC", 1:n)
+        #print.default(format(rowcolsizes, print.gap = 2, quote = FALSE))
+        print(rowcolsizes)
+      }
+      else
+      {
+        if(n==1) cat("\nThere was one cluster found with\n ",sum(object@RowxNumber[,1]), "Rows and ", sum(object@NumberxCol), "columns\n")
+        if(n==0) cat("\nThere was no cluster found\n")
+      }
+      cat("\n\n")
+      
+      
+    }
+  }
+  
+}
+
+
+#' @export
+summary.bibit3 <- function(object,...){
+  print(object)
+}
+
+
+
+#' @title Extract BC from \code{bibit3} result and add pattern
+#' 
+#' @description Function which will print the BC matrix and add 2 duplicate articial pattern rows on top. The function allows you to see the BC and the pattern the BC was guided towards to.
+#' @author Ewoud De Troyer
+#' 
+#' @export
+#' @param result Result produced by \code{\link{bibit3}}
+#' @param matrix The binary input matrix.
+#' @param pattern Vector containing either the number or name of which patterns the BC results should be extracted.
+#' @param type Vector for which BC results should be printed.
+#' \itemize{
+#' \item Full Pattern (\code{"full"})
+#' \item Sub Pattern (\code{"sub"})
+#' \item Extended (\code{"ext"})
+#' }
+#' @param BC Vector of BC indices which should be printed, conditioned on \code{pattern} and \code{type}.
+#' @return Prints queried biclusters.
+#' @examples
+#' \dontrun{ 
+#' set.seed(1)
+#' data <- matrix(sample(c(0,1),100*100,replace=TRUE,prob=c(0.9,0.1)),nrow=100,ncol=100)
+#' data[1:10,1:10] <- 1 # BC1
+#' data[11:20,11:20] <- 1 # BC2
+#' data[21:30,21:30] <- 1 # BC3
+#' colsel <- sample(1:ncol(data),ncol(data))
+#' data <- data[sample(1:nrow(data),nrow(data)),colsel]
+#' 
+#' pattern_matrix <- matrix(0,nrow=3,ncol=100)
+#' pattern_matrix[1,1:7] <- 1
+#' pattern_matrix[2,11:15] <- 1
+#' pattern_matrix[3,13:20] <- 1
+#' 
+#' pattern_matrix <- pattern_matrix[,colsel]
+#' 
+#' 
+#' out <- bibit3(matrix=data,minr=2,minc=2,noise=0.1,pattern_matrix=pattern_matrix,
+#'               subpattern=TRUE,extend_columns=TRUE,pattern_combinations=TRUE)
+#' out  # OR print(out) OR summary(out)
+#' 
+#' 
+#' bibit3_patternBC(result=out,matrix=data,pattern=c(1),type=c("full","sub","ext"),BC=c(1,2))
+#' }
+bibit3_patternBC <- function(result,matrix,pattern=c(1),type=c("full","sub","ext"),BC=c(1)){
+  
+  if(class(result)!="bibit3"){stop("result is not a `bibit3' S3 object")}
+  
+  # Check if matrix is binary (DISCRETIZED NOT YET IMPLEMENTED!)
+  if(class(matrix)!="matrix"){stop("matrix parameter should contain a matrix object",call.=FALSE)}
+  if(!identical(as.numeric(as.vector(matrix)),as.numeric(as.logical(matrix)))){stop("matrix is not a binary matrix!",call.=FALSE)}
+  
+  if(is.null(rownames(matrix))){rownames(matrix) <- paste0("Row",c(1:nrow(matrix)))}
+  if(is.null(colnames(matrix))){colnames(matrix) <- paste0("Col",c(1:ncol(matrix)))}
+  
+  # Checking other input
+  nPatterns <- nrow(result$pattern_matrix)
+  
+  if(class(pattern)=="character"){
+    if(sum(!(pattern %in% names(result)))>0){stop("One of the patterns is not in the result object")}
+    pattern <- sapply(pattern,FUN=function(x){which(x==names(result))})
+  }
+  if(class(pattern)!="numeric"){stop("pattern should be numeric vector")}
+  if(sum(pattern>nPatterns)>0){stop("One of the patterns is not in the result object")}
+  
+  if(sum(!(type %in% c("full","sub","ext")))>0){stop("type contains wrong input")}
+  type <- sapply(type,FUN=function(x){switch(x,full="FullPattern",sub="SubPattern",ext="Extended")})
+  names(type) <- NULL
+  
+  if(class(BC)!="numeric"){stop("BC should be numeric vector")}
+  
+  # Printing
+  for(i.pattern in pattern){
+    for(i.type in type){
+      for(i.BC in BC){
+        
+        if(i.BC<=result[[i.pattern]][[i.type]]@Number){
+          cat(paste0(toupper(names(result)[i.pattern])," - ",i.type," - BC ",i.BC))
+          
+          extra_rows <- matrix(rep(result$pattern_matrix[i.pattern,],2),nrow=2,byrow=TRUE,dimnames=list(paste0(names(result)[i.pattern],c("_Art1","_Art2")),colnames(matrix)))
+          
+          BCprint <- matrix[result[[i.pattern]][[i.type]]@RowxNumber[,i.BC],result[[i.pattern]][[i.type]]@NumberxCol[i.BC,]]
+          cat("\n\n")
+          print(rbind(extra_rows[,result[[i.pattern]][[i.type]]@NumberxCol[i.BC,]],BCprint))
+          cat("\n\n")
+        }
+      }
+    }
+  }
+}
+
+
+
+
+
+
