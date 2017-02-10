@@ -57,18 +57,26 @@ MaxBC <- function(bicresult,top=1){
       colnames(size) <- paste0("BC",ind.sizemax)
       
     }else{
-      row.temp <- rbind(RowDim=rowsum[ind.rowmax],ColDim=colsum[ind.rowmax],SizeDim=sizesum[ind.rowmax])
-      colnames(row.temp) <- paste0("BC",ind.rowmax)
+      if(length(ind.rowmax)>0){
+        row.temp <- rbind(RowDim = rowsum[ind.rowmax], ColDim = colsum[ind.rowmax], 
+                          SizeDim = sizesum[ind.rowmax])
+        colnames(row.temp) <- paste0("BC", ind.rowmax)
+        row <- cbind(row, row.temp)
+      }
       
-      column.temp <- rbind(RowDim=rowsum[ind.colmax],ColDim=colsum[ind.colmax],SizeDim=sizesum[ind.colmax])
-      colnames(column.temp) <- paste0("BC",ind.colmax)
+      if(length(ind.colmax)>0){
+        column.temp <- rbind(RowDim = rowsum[ind.colmax], 
+                             ColDim = colsum[ind.colmax], SizeDim = sizesum[ind.colmax])
+        colnames(column.temp) <- paste0("BC", ind.colmax)
+        column <- cbind(column, column.temp)
+      }
       
-      size.temp <- rbind(RowDim=rowsum[ind.sizemax],ColDim=colsum[ind.sizemax],SizeDim=sizesum[ind.sizemax])
-      colnames(size.temp) <- paste0("BC",ind.sizemax)
-      
-      row <- cbind(row,row.temp)
-      column <- cbind(column,column.temp)
-      size <- cbind(size,size.temp)
+      if(length(ind.sizemax)>0){
+        size.temp <- rbind(RowDim = rowsum[ind.sizemax], 
+                           ColDim = colsum[ind.sizemax], SizeDim = sizesum[ind.sizemax])
+        colnames(size.temp) <- paste0("BC", ind.sizemax)
+        size <- cbind(size, size.temp)
+      }
     }
     
   }
@@ -143,6 +151,9 @@ make_arff_row_col <- function(matrix,name="data",path=""){
     colnames(matrix) <- gsub(";","",colnames(matrix))
     warning(paste0("Column names ",paste0(which(colsc),collapse = ",")," contained a ';' which was deleted."),call.=FALSE)
   }
+  
+  # No duplicate row names allowed!
+  if(sum(table(rownames(matrix))>1)){stop("No duplicate row names allowed!")}
   
   write.arff(t(matrix),file=paste0(getwd(),"/",path,"/",name,"_arff.arff"))
   write.table(matrix(rownames(matrix),ncol=1),quote=FALSE,row.names=FALSE,col.names=FALSE,file=paste0(getwd(),"/",path,"/",name,"_rownames.csv"))
