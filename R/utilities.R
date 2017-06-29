@@ -1,3 +1,5 @@
+
+
 #' Finding Maximum Size Biclusters
 #' 
 #' Simple function which scans a \code{Biclust} result and returns which biclusters have maximum row, column or size (row*column).
@@ -5,7 +7,7 @@
 #' @author Ewoud De Troyer
 #' 
 #' @export
-#' @param bicresult A \code{Biclust} result. (e.g. The return object from \code{bibit} or \code{bibit2})
+#' @param result A \code{Biclust} result. (e.g. The return object from \code{bibit} or \code{bibit2})
 #' @param top The number of top row/col/size dimension which are searched for. (e.g. default \code{top=1} gives only the maximum)
 #' 
 #' @return A list containing:
@@ -27,11 +29,11 @@
 #' MaxBC(result)
 #' 
 #' }
-MaxBC <- function(bicresult,top=1){
-  if(class(bicresult)!="Biclust"){stop("bicresult needs to be of class 'Biclust'")}
+MaxBC <- function(result,top=1){
+  if(class(result)!="Biclust"){stop("result needs to be of class 'Biclust'")}
   
-  rowsum <- colSums(bicresult@RowxNumber)
-  colsum <- rowSums(bicresult@NumberxCol)
+  rowsum <- colSums(result@RowxNumber)
+  colsum <- rowSums(result@NumberxCol)
   sizesum <- rowsum*colsum
   
   top.col <- sort(unique(colsum),decreasing=TRUE)[1:top]
@@ -92,34 +94,34 @@ MaxBC <- function(bicresult,top=1){
 
 
 #' Transform R matrix object to BiBit input files.
-#' 
+#'
 #' Transform the R matrix object to 1 \code{.arff} for the data and 2 \code{.csv} files for the row and column names. These are the 3 files required for the original BiBit Java algorithm
 #' The path of these 3 files can then be used in the \code{arff_row_col} parameter of the \code{bibit} function.
-#' 
+#'
 #' @author Ewoud De Troyer
-#' 
+#'
 #' @export
 #' @param matrix The binary input matrix.
 #' @param name Basename for the 3 input files.
 #' @param path Directory path where to write the 3 input files to.
-#' 
+#'
 #' @return 3 input files for BiBit:
 #' \itemize{
-#' \item 1 \code{.arff} file containing the data.
-#' \item 1 \code{.csv} file for the row names. The file contains 1 column of names without quotation.
-#' \item 1 \code{.csv} file for the column names. The file contains 1 column of names without quotation.
+#' \item One \code{.arff} file containing the data.
+#' \item One \code{.csv} file for the row names. The file contains 1 column of names without quotation.
+#' \item One \code{.csv} file for the column names. The file contains 1 column of names without quotation.
 #' }
-#' 
-#' @examples 
+#'
+#' @examples
 #' \dontrun{
 #' data <- matrix(sample(c(0,1),100*100,replace=TRUE,prob=c(0.9,0.1)),nrow=100,ncol=100)
 #' data[1:10,1:10] <- 1 # BC1
 #' data[11:20,11:20] <- 1 # BC2
 #' data[21:30,21:30] <- 1 # BC3
 #' data <- data[sample(1:nrow(data),nrow(data)),sample(1:ncol(data),ncol(data))]
-#' 
+#'
 #' make_arff_row_col(matrix=data,name="data",path="")
-#' 
+#'
 #' result <- bibit(data,minr=5,minc=5,
 #'                 arff_row_col=c("data_arff.arff","data_rownames.csv","data_colnames.csv"))
 #' }
@@ -164,29 +166,7 @@ make_arff_row_col <- function(matrix,name="data",path=""){
 
 
 
-#' Finding BC's with specific rows.
-#' 
-#' Simple function which scans a \code{Biclust} result and returns which biclusters contain all rows given in the \code{rows} parameter.
-#' 
-#' @author Ewoud De Troyer
-#' 
-#' @export
-#' @param bicresult A \code{Biclust} result. (e.g. The return object from \code{bibit} or \code{bibit2})
-#' @param rows A vector containing containing the row numbers which should be in the bicluster.
-#' 
-#' @return A matrix containing the biclusters in the columns and the row, column and size dimensions on the rows.
-#' 
-#' @examples 
-#' \dontrun{
-#' data <- matrix(sample(c(0,1),100*100,replace=TRUE,prob=c(0.9,0.1)),nrow=100,ncol=100)
-#' data[1:10,1:10] <- 1 # BC1
-#' data[11:20,11:20] <- 1 # BC2
-#' data[21:30,21:30] <- 1 # BC3
-#' result <- bibit(data,minr=2,minc=2)
-#' 
-#' rows_in_BC(result,rows=c(21,22,23))
-#' 
-#' }
+
 rows_in_BC <- function(bicresult,rows){
   
   if(class(bicresult)!="Biclust"){stop("bicresult is not a Biclust class object",call.=FALSE)}
@@ -212,39 +192,7 @@ rows_in_BC <- function(bicresult,rows){
 
 
 
-#' @title Finding BC's with specific rows which only 1's in the BC.
-#' 
-#' @description Simple function which scans a \code{Biclust} result and returns which biclusters contain all rows given in the \code{rows} parameter,
-#' but only if these rows only contain 1's in the bicluster. This can be particularly helpful after having added articial row-pairs with a pattern of interest. 
-#' With this function you can retrieve the biclusters that grew from these pairs from all the discovered biclusters.
-#' 
-#' @author Ewoud De Troyer
-#' 
-#' @export
-#' @param matrix The binary input matrix.
-#' @param bicresult A \code{Biclust} result. (e.g. The return object from \code{bibit} or \code{bibit2})
-#' @param rows A vector containing containing the row numbers which should be in the bicluster.
-#' 
-#' @return A matrix containing the biclusters in the columns and the row, column and size dimensions on the rows.
-#' 
-#' @examples 
-#' \dontrun{
-#' data <- matrix(sample(c(0,1),100*100,replace=TRUE,prob=c(0.9,0.1)),nrow=100,ncol=100)
-#' data[1:10,1:10] <- 1 # BC1
-#' data[11:20,11:20] <- 1 # BC2
-#' data[21:30,21:30] <- 1 # BC3
-#' 
-#' extra_rows <- rep(0,100)
-#' extra_rows[11:25] <- 1
-#' 
-#' data <- rbind(data,rbind(extra_rows,extra_rows)) 
-#' rownames(data) <- NULL
-#' 
-#' result <- bibit2(data,minr=2,minc=2,noise=0.2)
-#' 
-#' rows_full1_in_BC(matrix=data,bicresult=result,rows=c(101,102))
-#' 
-#' }
+
 rows_full1_in_BC <- function(matrix,bicresult,rows){
   
   if(class(bicresult)!="Biclust"){stop("bicresult is not a Biclust class object",call.=FALSE)}
@@ -298,31 +246,7 @@ fitness_score <- function(BC,alpha=1){
 }
 
 
-#' @title Computing Fitness Score of Biclustering Result
-#' 
-#' @description \emph{EXPERIMENTAL FUNCTION}, still needs tuning. Will eventually be integrated in bibit2 function. 
-#' @author Ewoud De Troyer
-#' 
-#' @export
-#' @param matrix The binary input matrix.
-#' @param bicresult A \code{Biclust} result. (e.g. The return object from \code{bibit} or \code{bibit2})
-#' @param alpha Weighting factor between 0 and 1.
-#' @param verbose Boolean value to show a short summary.
-#' @return A list containing the scores.
-#' @examples
-#' \dontrun{
-#' data <- matrix(sample(c(0,1),100*100,replace=TRUE,prob=c(0.9,0.1)),nrow=100,ncol=100)
-#' data[1:10,1:10] <- 1 # BC1
-#' data[11:20,11:20] <- 1 # BC2
-#' data[21:30,21:30] <- 1 # BC3
-#' data <- data[sample(1:nrow(data),nrow(data)),sample(1:ncol(data),ncol(data))]
-#' 
-#' result1 <- bibit2(data,minr=5,minc=5,noise=0.2)
-#' result1
-#' 
-#' fitness <- GOF(matrix=data,bicresult=result1,alpha=0.5)
-#' summary(fitness)
-#' }
+
 GOF <- function(matrix,bicresult,alpha=1,verbose=FALSE){
   if(class(bicresult)!="Biclust"){stop("bicresult is not a Biclust class object",call.=FALSE)}
   if(class(matrix)!="matrix"){stop("matrix parameter should contain a matrix object",call.=FALSE)}
@@ -353,7 +277,6 @@ GOF <- function(matrix,bicresult,alpha=1,verbose=FALSE){
 }
 
 
-#' @export
 summary.GOFBC <- function(object,...){
   
   score <- object$fitness$score
@@ -490,7 +413,7 @@ bibit3_patternBC <- function(result,matrix,pattern=c(1),type=c("full","sub","ext
   type <- sapply(type,FUN=function(x){switch(x,full="FullPattern",sub="SubPattern",ext="Extended")})
   names(type) <- NULL
   
-  if(class(BC)!="numeric"){stop("BC should be numeric vector")}
+  if(!(class(BC)%in%c("integer","numeric"))){stop("BC should be numeric vector")}
   
   # Printing
   for(i.pattern in pattern){
@@ -514,6 +437,102 @@ bibit3_patternBC <- function(result,matrix,pattern=c(1),type=c("full","sub","ext
 
 
 
+
+
+jaccard_bc <- function(result,BC1,BC2){
+  
+  combine.m <- result1.m <- result2.m <- matrix(0,nrow=dim(result@RowxNumber)[1],ncol=dim(result@NumberxCol)[2])
+  result1.m[result@RowxNumber[,BC1],result@NumberxCol[BC1,]] <- 1
+  combine.m[result@RowxNumber[,BC1],result@NumberxCol[BC1,]] <- 1
+  
+  result2.m[result@RowxNumber[,BC2],result@NumberxCol[BC2,]] <- 1
+  combine.m[result@RowxNumber[,BC2],result@NumberxCol[BC2,]] <- 1
+  
+  m1 <- sum(result1.m)
+  m2 <- sum(result2.m)
+  m12 <- sum(combine.m)
+  
+  JI <- (m1+m2-(m12))/(m12)
+  
+  return(JI)
+}
+
+same_bc <- function(result,BC1,BC2){
+  if((all((result@RowxNumber[,BC1]-result@RowxNumber[,BC2])==0))&(all((result@NumberxCol[BC1,]-result@NumberxCol[BC2,])==0))){return(TRUE)}else{FALSE}
+}
+
+
+
+# Small function which checks if 1 BC is contained in another. The input should be a bit word representation of the row and column booleans of both BC's
+BCcontained <- function(BC1word,BC2word){
+  intersectword <- apply(rbind(BC1word,BC2word),MARGIN=2,FUN=function(x){bitwAnd(x[1],x[2])})
+  if(all(intersectword==BC1word)){return(1)}
+  if(all(intersectword==BC2word)){return(2)}
+}
+
+
+progress_dots <- function(i,nBC){
+  if(nBC<=200){
+    if(i%%40==0 | i==nBC){
+      cat(".",i,"\n")
+    }else{
+      cat(".")
+    }
+  }else{
+    linenumber <- ceiling(nBC/5)
+    numberperdot <- round(linenumber/40,digits=0)
+    if(i%%linenumber==0 | i==nBC){
+      cat(".",i,"\n")
+    }else{
+      if(i%%numberperdot==0){cat(".")}
+    }
+  }
+}
+
+
+biclust_correctdim <- function(result,matrix){
+  if(class(result)=="Biclust"){
+    if((nrow(matrix)!=nrow(result@RowxNumber))|(ncol(matrix)!=ncol(result@NumberxCol))){stop("result and matrix have incompatible dimenions",call.=FALSE)}
+  }else if(class(result)=="BiBitWorkflow"){
+    if((nrow(matrix)!=nrow(result$Biclust@RowxNumber))|(ncol(matrix)!=ncol(result$Biclust@NumberxCol))){stop("result and matrix have incompatible dimenions",call.=FALSE)}
+  }
+}
+
+
+
+
+#' @title Summary Method for Biclust Class
+#' @description Summary Method for Biclust Class
+#' @param object Biclust S4 Object
+#' @export
+setMethod("summary", "Biclust",
+          function(object)
+          {
+            cat("\nAn object of class",class(object),"\n\n")
+            cat("call:", deparse(object@Parameters$Call,0.75*getOption("width")),
+                sep="\n\t")
+            n<-object@Number
+            
+            if(n>1)
+            {
+              cat("\nNumber of Clusters found: ",object@Number, "\n")
+              cat("\nCluster sizes:\n")
+              
+              rowcolsizes<-rbind(colSums(object@RowxNumber[,1:n]),rowSums(object@NumberxCol[1:n,]))
+              rownames(rowcolsizes)<-c("Number of Rows:","Number of Columns:")
+              colnames(rowcolsizes)<-paste("BC", 1:n)
+              #print.default(format(rowcolsizes, print.gap = 2, quote = FALSE))
+              print(rowcolsizes)
+            }
+            else
+            {
+              if(n==1) cat("\nThere was one cluster found with\n ",sum(object@RowxNumber[,1]), "Rows and ", sum(object@NumberxCol), "columns")
+              if(n==0) cat("\nThere was no cluster found")
+            }
+            cat("\n\n")
+            
+            
+          })
 
 
 

@@ -5,8 +5,9 @@
 \title{The BiBit Algorithm with Noise Allowance guided by Provided Patterns.}
 \usage{
 bibit3(matrix = NULL, minr = 1, minc = 2, noise = 0,
-  pattern_matrix = NULL, subpattern = TRUE, extend_columns = TRUE,
-  pattern_combinations = FALSE, arff_row_col = NULL)
+  pattern_matrix = NULL, subpattern = TRUE, pattern_combinations = FALSE,
+  arff_row_col = NULL, extend_columns = "none", extend_mincol = 1,
+  extend_limitcol = 1, extend_noise = noise, extend_contained = FALSE)
 }
 \arguments{
 \item{matrix}{The binary input matrix.}
@@ -17,7 +18,7 @@ bibit3(matrix = NULL, minr = 1, minc = 2, noise = 0,
 
 \item{noise}{Noise parameter which determines the amount of zero's allowed in the bicluster (i.e. in the extra added rows to the starting row pair).
 \itemize{
-\item \code{noise=0}: No noise allowed. This gives the same result as using the \code{\link{bibit}} function.
+\item \code{noise=0}: No noise allowed. This gives the same result as using the \code{\link{bibit}} function. (default)
 \item \code{0<noise<1}: The \code{noise} parameter will be a noise percentage. The number of allowed 0's in a (extra) row in the bicluster will depend on the column size of the bicluster. 
 More specifically \code{zeros_allowed = ceiling(noise * columnsize)}. For example for \code{noise=0.10} and a bicluster column size of \code{5}, the number of allowed 0's would be \code{1}.
 \item \code{noise>=1}: The \code{noise} parameter will be the number of allowed 0's in a (extra) row in the bicluster independent from the column size of the bicluster. In this noise option, the noise parameter should be an integer.
@@ -27,11 +28,22 @@ More specifically \code{zeros_allowed = ceiling(noise * columnsize)}. For exampl
 
 \item{subpattern}{Boolean value if sub patterns are of interest as well (default=TRUE).}
 
-\item{extend_columns}{Boolean value if columns of Biclusters should also be extended for additional results (default=TRUE). See Details Section for more info.}
-
 \item{pattern_combinations}{Boolean value if the pairwise combinations of patterns (the intersecting 1's) should also used as starting points (default=FALSE).}
 
 \item{arff_row_col}{Same argument as in \code{\link{bibit}} and \code{\link{bibit2}}. However you can only provide 1 pattern by using this option. For \code{bibit3} to work, the pattern has to be added 2 times on top of the matrix (= identical first 2 rows).}
+
+\item{extend_columns}{\emph{Column Extension Parameter}\cr Can be one of the following: \code{"none"}, \code{"naive"}, \code{"recursive"} which will apply either a naive or recursive column extension procedure. (See Details Section for more information.)
+\cr Based on the extension, additional biclusters will be created in the Biclust object which can be seen in the column and row names of the \code{RowxNumber} and \code{NumberxCol} slots (\code{"_Ext"} suffix).
+\cr The \code{info} slot will also contain some additional information. Inside this slot, \code{BC.Extended} contains info on which original biclusters were extended, how many columns were added, and in how many extra extended biclusters this resulted.
+\cr \cr \strong{Warning:} Using a percentage-based \code{extend_noise} (or \code{noise} by default) in combination with the recursive procedure will result in a large amount of biclusters and increase the computation time a lot. Depending on the data when using recursive in combination with a noise percentage, it is advised to keep it reasonable small (e.g. 10\%). Another remedy is to sufficiently increase the \code{extend_limitcol} either as a percentage or integer to limit the candidates of columns.}
+
+\item{extend_mincol}{\emph{Column Extension Parameter}\cr A minimum number of columns that a bicluster should be able to be extended with before saving the result. (Default=1)}
+
+\item{extend_limitcol}{\emph{Column Extension Parameter}\cr The number (\code{extend_limitcol>=1}) or percentage (\code{0<extend_limitcol<1}) of 1's that a column (subsetted on the BC rows) should at least contain for it to be a candidate to be added to the bicluster as an extension. (Default=1) (Increase this parameter if the recursive extension takes too long. Limiting the pool of candidates will decrease computation time, but restrict the results more.)}
+
+\item{extend_noise}{\emph{Column Extension Parameter}\cr The maximum allowed noise (in each row) when extending the columns of the bicluster. Can take the same as the \code{noise} parameter. By default this is the same value as \code{noise}.}
+
+\item{extend_contained}{\emph{Column Extension Parameter}\cr Logical value if extended results should be checked if they contain each other (and deleted if this is the case). Default = \code{FALSE}. This can be a lengthy procedure for a large amount of biclusters (>1000).}
 }
 \value{
 A S3 list object, \code{"bibit3"} in which each element (apart from the last one) corresponds with a provided pattern or combination thereof. \cr
@@ -58,8 +70,11 @@ Three types of Biclusters can be discovered:
 \describe{
 \item{\emph{Full Pattern: }}{Bicluster which overlaps completely (within allowed noise levels) with the provided pattern. The column size of this bicluster is always equal to the number of 1's in the pattern.}
 \item{\emph{Sub Pattern: }}{Biclusters which overlap with a part of the provided pattern within allowed noise levels. Will only be given if \code{subpattern=TRUE} (default). Setting this option to \code{FALSE} decreases computation time.}
-\item{\emph{Extended: }}{Using the resulting biclusters from the full and sub patterns, other columns will be attempted to be added to the biclusters while keeping the noise as low as possible (the number of rows in the BC stays constant). Naturally the articially added pattern rows will not be taken into account with the noise levels as they are 0 in each other column.
-\cr The question which is attempted to be answered here is \emph{`Do the rows, which overlap partly or fully with the given pattern, have other similarities outside the given pattern?`}}
+\item{\emph{Extended: }}{Using the resulting biclusters from the full and sub patterns, other columns will be attempted to be added to the biclusters while keeping the noise as low as possible (the number of rows in the BC stays constant). 
+This can be done either with \code{extend_columns} equal to \code{"naive"} or \code{"recursive"}. More info on the difference can be found in the Details Section of \code{\link{bibit2}}.
+\cr Naturally the articially added pattern rows will not be taken into account with the noise levels as they are 0 in each other column.
+\cr The question which is attempted to be answered here is \emph{`Do the rows, which overlap partly or fully with the given pattern, have other similarities outside the given pattern?`}
+}
 } 
 
 \emph{How?}
