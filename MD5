@@ -1,10 +1,10 @@
-929c8b301186951a9bedffe86c1bf42d *DESCRIPTION
+01248b1303a5a99454342cb379cd64f6 *DESCRIPTION
 0ded441b3d9d06c2825432058588ca89 *NAMESPACE
 a9d8b5b8e38757382255fc69fd1dc72f *R/BiBitR.R
 4556f9512c6eb4236eced77649fcf69d *R/bibit.R
 0daeffa18b28503cfaa3fdd39c69de27 *R/extension.R
-e09e110c799df58315f3236c2faefbea *R/utilities.R
-8482d20b69b8e1f14356194432b4fbb3 *R/workflowfunction.R
+6ddefe0272ca70284125f3c63757cc63 *R/utilities.R
+5cfde9bf2e3597530643bc7fe5153ca6 *R/workflowfunction.R
 e85f10bb5afecf8caaec050d4c9f5e7f *README.md
 2b268e469a622acbb0aede5394c51513 *inst/java/BiBit.jar
 0e311a04079399fd07cced3950f95da6 *inst/java/BiBit2.jar

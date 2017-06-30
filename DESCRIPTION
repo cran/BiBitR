@@ -1,8 +1,8 @@
 Package: BiBitR
 Type: Package
 Title: R Wrapper for Java Implementation of BiBit
-Version: 0.3.0
-Date: 2017-06-29
+Version: 0.3.1
+Date: 2017-06-30
 Author: De Troyer Ewoud
 Maintainer: De Troyer Ewoud <ewoud.detroyer@uhasselt.be>
 Description: A simple R wrapper for the Java BiBit algorithm from "A
@@ -14,6 +14,6 @@ Imports:
 RoxygenNote: 5.0.1
 SystemRequirements: Java
 NeedsCompilation: no
-Packaged: 2017-06-29 18:20:15 UTC; lucp8394
+Packaged: 2017-06-30 08:58:09 UTC; lucp8394
 Repository: CRAN
-Date/Publication: 2017-06-29 22:45:57 UTC
+Date/Publication: 2017-06-30 17:38:22 UTC
